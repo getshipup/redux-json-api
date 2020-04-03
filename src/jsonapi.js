@@ -1,6 +1,7 @@
 import { createAction, handleActions } from 'redux-actions';
 import 'fetch-everywhere';
 import imm from 'object-path-immutable';
+import snakeCase from 'lodash.snakecase';
 
 import {
   addLinksToState,
@@ -105,7 +106,7 @@ export const createResource = (resource, {
     dispatch(apiWillCreate(resource));
 
     const { host: apiHost, path: apiPath, headers } = getState().api.endpoint;
-    const endpoint = `${apiHost}${apiPath}${version}/${resource.type}`;
+    const endpoint = `${apiHost}${apiPath}${version}/${snakeCase(resource.type)}`;
 
     return new Promise((resolve, reject) => {
       apiRequest(endpoint, {
@@ -181,7 +182,7 @@ export const updateResource = (resource, {
     dispatch(apiWillUpdate(resource));
 
     const { host: apiHost, path: apiPath, headers } = getState().api.endpoint;
-    const endpoint = `${apiHost}${apiPath}${version}/${resource.type}/${resource.id}`;
+    const endpoint = `${apiHost}${apiPath}${version}/${snakeCase(resource.type)}/${resource.id}`;
 
     return new Promise((resolve, reject) => {
       apiRequest(endpoint, {
@@ -219,7 +220,7 @@ export const deleteResource = (resource, {
     dispatch(apiWillDelete(resource));
 
     const { host: apiHost, path: apiPath, headers } = getState().api.endpoint;
-    const endpoint = `${apiHost}${apiPath}${version}/${resource.type}/${resource.id}`;
+    const endpoint = `${apiHost}${apiPath}${version}/${snakeCase(resource.type)}/${resource.id}`;
 
     return new Promise((resolve, reject) => {
       apiRequest(endpoint, {
