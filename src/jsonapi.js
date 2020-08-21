@@ -1,6 +1,7 @@
 import { createAction, handleActions } from 'redux-actions';
 import 'fetch-everywhere';
 import imm from 'object-path-immutable';
+import snakeCase from 'lodash.snakecase';
 
 import {
   addLinksToState,
@@ -95,7 +96,8 @@ export const uploadFile = (file, {
 
 export const createResource = (resource, {
   onSuccess: onSuccess = noop,
-  onError: onError = noop
+  onError: onError = noop,
+  signal: signal = undefined,
 } = {}, version = '') => {
   if (onSuccess !== noop || onError !== noop) {
     console.warn('onSuccess/onError callbacks are deprecated. Please use returned promise: https://github.com/dixieio/redux-json-api/issues/17');
@@ -105,10 +107,11 @@ export const createResource = (resource, {
     dispatch(apiWillCreate(resource));
 
     const { host: apiHost, path: apiPath, headers } = getState().api.endpoint;
-    const endpoint = `${apiHost}${apiPath}${version}/${resource.type}`;
+    const endpoint = `${apiHost}${apiPath}${version}/${snakeCase(resource.type)}`;
 
     return new Promise((resolve, reject) => {
       apiRequest(endpoint, {
+        signal,
         headers,
         method: 'POST',
         credentials: 'include',
@@ -116,16 +119,22 @@ export const createResource = (resource, {
           data: resource
         })
       }).then(json => {
-        dispatch(apiCreated(json));
-        onSuccess(json);
-        resolve(json);
+        const okSignal = signal ? !signal.aborted : true
+        if (okSignal) {
+          dispatch(apiCreated(json));
+          onSuccess(json);
+          resolve(json);
+        }
       }).catch(error => {
-        const err = error;
-        err.resource = resource;
+        const okSignal = signal ? !signal.aborted : true
+        if (okSignal) {
+          const err = error;
+          err.resource = resource;
 
-        dispatch(apiCreateFailed(err));
-        onError(err);
-        reject(err);
+          dispatch(apiCreateFailed(err));
+          onError(err);
+          reject(err);
+        }
       });
     });
   };
@@ -134,6 +143,7 @@ export const createResource = (resource, {
 export const readEndpoint = (endpoint, {
   onSuccess: onSuccess = noop,
   onError: onError = noop,
+  signal: signal = undefined,
   options = {
     indexLinks: undefined,
   }
@@ -150,21 +160,28 @@ export const readEndpoint = (endpoint, {
 
     return new Promise((resolve, reject) => {
       apiRequest(`${apiEndpoint}`, {
+        signal,
         headers,
         credentials: 'include'
       })
         .then(json => {
-          dispatch(apiRead({ endpoint, options, ...json }));
-          onSuccess(json);
-          resolve(json);
+          const okSignal = signal ? !signal.aborted : true
+          if (okSignal) {
+            dispatch(apiRead({ endpoint, options, ...json }));
+            onSuccess(json);
+            resolve(json);
+          }
         })
         .catch(error => {
-          const err = error;
-          err.endpoint = endpoint;
+          const okSignal = signal ? !signal.aborted : true
+          if (okSignal) {
+            const err = error;
+            err.endpoint = endpoint;
 
-          dispatch(apiReadFailed(err));
-          onError(err);
-          reject(err);
+            dispatch(apiReadFailed(err));
+            onError(err);
+            reject(err);
+          }
         });
     });
   };
@@ -172,7 +189,8 @@ export const readEndpoint = (endpoint, {
 
 export const updateResource = (resource, {
   onSuccess: onSuccess = noop,
-  onError: onError = noop
+  onError: onError = noop,
+  signal: signal = undefined,
 } = {}, version = '') => {
   if (onSuccess !== noop || onError !== noop) {
     console.warn('onSuccess/onError callbacks are deprecated. Please use returned promise: https://github.com/dixieio/redux-json-api/issues/17');
@@ -181,10 +199,11 @@ export const updateResource = (resource, {
     dispatch(apiWillUpdate(resource));
 
     const { host: apiHost, path: apiPath, headers } = getState().api.endpoint;
-    const endpoint = `${apiHost}${apiPath}${version}/${resource.type}/${resource.id}`;
+    const endpoint = `${apiHost}${apiPath}${version}/${snakeCase(resource.type)}/${resource.id}`;
 
     return new Promise((resolve, reject) => {
       apiRequest(endpoint, {
+        signal,
         headers,
         method: 'PATCH',
         credentials: 'include',
@@ -192,16 +211,22 @@ export const updateResource = (resource, {
           data: resource
         })
       }).then(json => {
-        dispatch(apiUpdated(json));
-        onSuccess(json);
-        resolve(json);
+        const okSignal = signal ? !signal.aborted : true
+        if (okSignal) {
+          dispatch(apiUpdated(json));
+          onSuccess(json);
+          resolve(json);
+        }
       }).catch(error => {
-        const err = error;
-        err.resource = resource;
+        const okSignal = signal ? !signal.aborted : true
+        if (okSignal) {
+          const err = error;
+          err.resource = resource;
 
-        dispatch(apiUpdateFailed(err));
-        onError(err);
-        reject(err);
+          dispatch(apiUpdateFailed(err));
+          onError(err);
+          reject(err);
+        }
       });
     });
   };
@@ -209,7 +234,8 @@ export const updateResource = (resource, {
 
 export const deleteResource = (resource, {
   onSuccess: onSuccess = noop,
-  onError: onError = noop
+  onError: onError = noop,
+  signal: signal = undefined,
 } = {}, version = '') => {
   if (onSuccess !== noop || onError !== noop) {
     console.warn('onSuccess/onError callbacks are deprecated. Please use returned promise: https://github.com/dixieio/redux-json-api/issues/17');
@@ -219,24 +245,31 @@ export const deleteResource = (resource, {
     dispatch(apiWillDelete(resource));
 
     const { host: apiHost, path: apiPath, headers } = getState().api.endpoint;
-    const endpoint = `${apiHost}${apiPath}${version}/${resource.type}/${resource.id}`;
+    const endpoint = `${apiHost}${apiPath}${version}/${snakeCase(resource.type)}/${resource.id}`;
 
     return new Promise((resolve, reject) => {
       apiRequest(endpoint, {
+        signal,
         headers,
         method: 'DELETE',
         credentials: 'include'
       }).then(() => {
-        dispatch(apiDeleted(resource));
-        onSuccess();
-        resolve();
+        const okSignal = signal ? !signal.aborted : true
+        if (okSignal) {
+          dispatch(apiDeleted(resource));
+          onSuccess();
+          resolve();
+        }
       }).catch(error => {
-        const err = error;
-        err.resource = resource;
+        const okSignal = signal ? !signal.aborted : true
+        if (okSignal) {
+          const err = error;
+          err.resource = resource;
 
-        dispatch(apiDeleteFailed(err));
-        onError(err);
-        reject(err);
+          dispatch(apiDeleteFailed(err));
+          onError(err);
+          reject(err);
+        }
       });
     });
   };
@@ -244,7 +277,8 @@ export const deleteResource = (resource, {
 
 export const requireResource = (resourceType, endpoint = resourceType, {
   onSuccess: onSuccess = noop,
-  onError: onError = noop
+  onError: onError = noop,
+  signal: signal = undefined,
 } = {}) => {
   if (onSuccess !== noop || onError !== noop) {
     console.warn('onSuccess/onError callbacks are deprecated. Please use returned promise: https://github.com/dixieio/redux-json-api/issues/17');
@@ -258,7 +292,7 @@ export const requireResource = (resourceType, endpoint = resourceType, {
         return onSuccess();
       }
 
-      dispatch(readEndpoint(endpoint, { onSuccess, onError }))
+      dispatch(readEndpoint(endpoint, { onSuccess, onError, signal }))
         .then(resolve)
         .catch(reject);
     });
